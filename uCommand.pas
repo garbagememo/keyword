@@ -1,4 +1,4 @@
-UNIT uCommand;
+﻿UNIT uCommand;
 INTERFACE
 USES SysUtils,Classes;
 
@@ -71,6 +71,8 @@ BEGIN
    CmdStrList.Add('WITH');
    CmdStrList.Add('WRITE');
    CmdStrList.Add('WRITELN');
+
+   
 END;
 BEGIN
 END.

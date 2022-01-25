@@ -54,8 +54,9 @@ begin
     BracketCommentFlag:=FALSE;
   END;
   IF LineCounter=1 THEN BEGIN
-    Delete(CurSt,1,3);
-    CurStLength:=CurStLength-3;
+//UTFの場合、文字列にUTF識別子がついているのでそれを削除
+    while  CurSt[1]>#$80 DO Delete(CurSt,1,1);
+    CurStLength:=Length(CurSt);
   END;
   Inc(LineCounter);
 end;
@@ -69,9 +70,10 @@ function TokenReaderRecord.isComment:boolean;
 var
   ch,NextCh:char;
 BEGIN
+  isComment:=inCommentFlag;
   ch:=CurSt[cPos];SideEffectCh:=#0;
   IF CurStLength>=cPos+1 THEN NextCh:=CurSt[cPos+1] ELSE NextCh:=#0;
-  IF inCommentFlag THEN BEGIN (**コメント終わりかどうか？**)
+  IF inCommentFlag THEN BEGIN (**コメント終わりかどうか？if**)
     IF ParenCommentFlag THEN BEGIN
       IF (ch='*') and(NextCh=')' ) THEN BEGIN
           ParenCommentFlag:=FALSE;
@@ -133,7 +135,8 @@ BEGIN
     WHILE (CurSt[cPos] IN ['A'..'Z','_','a'..'z']) AND (isEnd=FALSE) DO BEGIN
       kStr:=kStr+CurSt[cPos];inc(cPos);
     END;
-    wStr:=wStr+ReplaceKeyWord(kStr);
+    IF inCommentFlag=FALSE THEN kStr:=ReplaceKeyword(kStr);
+    wStr:=wStr+kStr;
   END;
   FetchStr:=wStr;
 END;
@@ -176,6 +179,7 @@ BEGIN
 
         assign(fp,Info.Name); reset(fp);
         TokenReader.ClearCommentFlag;
+        TokenReader.isUTF8:=isUTF8;
         while EOF(fp)=FALSE DO BEGIN
           ReadLN(fp,LINE);   
           oLine:=LINE;

@@ -3,16 +3,6 @@
 {$modeswitch advancedrecords}
 USES SysUtils,Classes,uCommand,getopts;
 
-{
-$20,$9:space;
-$21..$29,$3a..$40:mark;
-$30..$39:numeral;
-$41..$5a:ALPHABET;
-$5b..$5e,$60:mark;
-$5f:underscore;
-$61..$7a:alphabet;
-$80,,$ff:UTF8;
-}
 
 type
   TokenReaderRecord=RECORD
@@ -39,7 +29,7 @@ BEGIN
   LineCounter:=1;
 END;
 
-//UTF8は文頭にCPの2byteがつく・・・多分
+//UTF8は文頭にCPの識別子＋2byteがつく・・・多分
 procedure TokenReaderRecord.SetSt(st_:string);
 begin
   CurSt:=st_;
@@ -54,7 +44,7 @@ begin
     BracketCommentFlag:=FALSE;
   END;
   IF LineCounter=1 THEN BEGIN
-//UTFの場合、文字列にUTF識別子がついているのでそれを削除
+//UTFの場合、文字列にUTF識別子がついているのでそれを削除・・・だと思う
     while  CurSt[1]>#$80 DO Delete(CurSt,1,1);
     CurStLength:=Length(CurSt);
   END;
@@ -196,3 +186,15 @@ BEGIN
     FindClose(Info);
   end;
 END.
+
+{
+$20,$9:space;
+$21..$29,$3a..$40:mark;
+$30..$39:numeral;
+$41..$5a:ALPHABET;
+$5b..$5e,$60:mark;
+$5f:underscore;
+$61..$7a:alphabet;
+$80,,$ff:UTF8;
+}
+

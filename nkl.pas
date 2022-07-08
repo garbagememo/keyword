@@ -152,28 +152,32 @@ end;
 var
   Line:String;
   oLine:String;
+  ArgStr:string;
   fp,oFp:Text;
   c:char;
   OFN,tempFN:String;
   TokenReader:TokenReaderRecord;
   Info:TSearchRec;
-  isUTF8,isDispCode:boolean;
+  isUTF8,isDispCode,isSelfMatch:boolean;
   oLineList:TStringList;
   i:integer;
 begin
   replaceFlag:=false;
   tempFN:='temp.tmp';
   InitCmdStr;
-  isUTF8:=TRUE;isDispCode:=false;
+  isUTF8:=TRUE;isDispCode:=false;isSelfMatch:=false;
   c:=#0;
   repeat
-    c:=getopt('e:or');
+    c:=getopt('e:mor');
     case c of
       'r':begin
 	    ReplaceFlag:=TRUE;
 	  end;
       'o': begin
         isDispCode:=TRUE;
+           end;
+      'm':begin
+            isSelfMatch:=true;
       end;
       'e':begin
         if UpperCase(OptArg)='S' then begin
@@ -185,14 +189,17 @@ begin
         writeln('nkl [option] FileName');
         writeln('-r replace file (else output TEMP.TMP');
         writeln('-o disp souce screen');
+        writeln('-m .pas //unix shell complete * so ');
         writeln('-e s change shift-jis mode.not implement');
       end;
     end; { case }
   until c=endofoptions;
 
   if optind<=paramcount then begin
-    writeln(' Arg=',ParamStr(OptInd) );
-    FindFirst(ParamStr(OptInd),faAnyFile,Info);
+    ArgStr:=ParamStr(OptInd);
+    if isSelfMatch then ArgStr:='*'+ArgStr;
+    writeln(' Arg=',ArgStr );
+    FindFirst(ArgStr,faAnyFile,info);
     repeat
       if (Info.Attr and faDirectory)<>faDirectory then begin
         writeln(' Assign Name=',Info.name);

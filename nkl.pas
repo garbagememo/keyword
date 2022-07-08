@@ -14,10 +14,11 @@ type
     LineCounter:integer;
     isUTF8:boolean;
     inCommentFlag,SlashCommentFlag,ParenCommentFlag,BracketCommentFlag:Boolean;
+    LiteralFlag:boolean;
     procedure ClearCommentFlag;
     procedure SetSt(st_:string);
     function isEnd:boolean;//cPOSが行末だったらtrueを返す
-    function isComment:boolean;
+    function isStringData:boolean;
     function ReplaceKeyword(st:string):string;
     function FetchStr:String;
   END;
@@ -26,7 +27,9 @@ var
 
 procedure TokenReaderRecord.ClearCommentFlag;
 BEGIN
-  InCommentFlag:=FALSE;SlashCommentFlag:=FALSE;ParenCommentFlag:=FALSE;BracketCommentFlag:=FALSE;
+  InCommentFlag:=FALSE;
+  SlashCommentFlag:=FALSE;ParenCommentFlag:=FALSE;BracketCommentFlag:=FALSE;
+  LiteralFlag:=FALSE;
   isUTF8:=TRUE;
   LineCounter:=1;
 END;
@@ -58,37 +61,46 @@ BEGIN
   IF CurStLength<cPOS THEN result:=true ELSE result:=FALSE;
 END;
 
-function TokenReaderRecord.isComment:boolean;
+function TokenReaderRecord.isStringData:boolean;
 var
   ch,NextCh:char;
 BEGIN
-  isComment:=inCommentFlag;
+  result:=inCommentFlag;
   ch:=CurSt[cPos];SideEffectCh:=#0;
   IF CurStLength>=cPos+1 THEN NextCh:=CurSt[cPos+1] ELSE NextCh:=#0;
   IF inCommentFlag THEN BEGIN (**コメント終わりかどうか？if**)
     IF ParenCommentFlag THEN BEGIN
       IF (ch='*') and(NextCh=')' ) THEN BEGIN
           ParenCommentFlag:=FALSE;
-          isComment:=FALSE;
+          result:=FALSE;
           SideEffectCh:='*';inc(cPos);
       END;
     END;
     IF BracketCommentFlag THEN BEGIN
       IF ch='}' THEN BEGIN
-        isComment:=FALSE;
+        result:=FALSE;
         BracketCommentFlag:=FALSE;
       END;
     END;
+    IF LiteralFlag THEN BEGIN
+      if ch=#$27 then begin
+        result:=false;
+        LiteralFlag:=false;
+      end;
+    end;
   END
   ELSE BEGIN(**コメントかどうか？**)
     IF (ch='(') and (NextCh='*') THEN BEGIN
-      isComment:=TRUE;ParenCommentFlag:=TRUE;
+      result:=TRUE;ParenCommentFlag:=TRUE;
     END;
     IF ch='{' THEN BEGIN
-      isComment:=TRUE;BracketCommentFlag:=TRUE;
+      result:=TRUE;BracketCommentFlag:=TRUE;
     END;
+    IF ch=#$27 then begin
+      result:=true;LiteralFlag:=TRUE;
+    end;
     IF (ch='/') and (NextCh='/') THEN BEGIN
-      isComment:=TRUE;SlashCommentFlag:=TRUE;
+      result:=TRUE;SlashCommentFlag:=TRUE;
     END;
   END;
 END;
@@ -122,7 +134,7 @@ BEGIN
   END;
   while isEnd=FALSE DO BEGIN
     WHILE NOT(CurSt[cPos] IN ['A'..'Z','_','a'..'z']) AND (isEnd=FALSE) DO BEGIN
-      inCommentFlag:=isComment;//*)の扱いが問題あるが・・・
+      inCommentFlag:=isStringData;//*)の扱いが問題あるが・・・
       IF SideEffectCh<>#0 THEN wStr:=wStr+SideEffectCh;
       wStr:=wStr+CurSt[cPos];inc(cPos);
     END;

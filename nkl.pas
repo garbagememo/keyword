@@ -1,19 +1,19 @@
-﻿program nKWD;
+program nKWD;
 {$H+}{$MODE objfpc}
 {$modeswitch advancedrecords}
-USES SysUtils,Classes,uCommand,getopts;
+uses SysUtils,Classes,uCommand,getopts;
 
 const
   LowerFlag:boolean=true;
 type
-  TokenReaderRecord=RECORD
+  TokenReaderRecord=record
     CurSt:String;
     CurStLength:integer;
-    SideEffectCh:Char;
+    SideEffectCh:char;
     cPos:integer;
     LineCounter:integer;
     isUTF8:boolean;
-    inCommentFlag,SlashCommentFlag,ParenCommentFlag,BracketCommentFlag:Boolean;
+    inCommentFlag,SlashCommentFlag,ParenCommentFlag,BracketCommentFlag:boolean;
     LiteralFlag:boolean;
     procedure ClearCommentFlag;
     procedure SetSt(st_:string);
@@ -21,18 +21,18 @@ type
     function isStringData:boolean;
     function ReplaceKeyword(st:string):string;
     function FetchStr:String;
-  END;
+  end;
 var
   ReplaceFlag:boolean;
 
 procedure TokenReaderRecord.ClearCommentFlag;
-BEGIN
-  InCommentFlag:=FALSE;
-  SlashCommentFlag:=FALSE;ParenCommentFlag:=FALSE;BracketCommentFlag:=FALSE;
-  LiteralFlag:=FALSE;
+begin
+  InCommentFlag:=false;
+  SlashCommentFlag:=false;ParenCommentFlag:=false;BracketCommentFlag:=false;
+  LiteralFlag:=false;
   isUTF8:=TRUE;
   LineCounter:=1;
-END;
+end;
 
 //UTF8は文頭にCPの識別子＋2byteがつく・・・多分
 procedure TokenReaderRecord.SetSt(st_:string);
@@ -40,78 +40,78 @@ begin
   CurSt:=st_;
   CurStLength:=Length(CurSt);
   cPos:=1;
-  IF SlashCommentFlag THEN BEGIN
-    inCommentFlag:=FALSE;
-    SlashCommentFlag:=FALSE;
-  END;
-  IF InCommentFlag=FALSE THEN BEGIN
-    ParenCommentFlag:=FALSE;
-    BracketCommentFlag:=FALSE;
-  END;
-  IF LineCounter=1 THEN BEGIN
+  if SlashCommentFlag then begin
+    inCommentFlag:=false;
+    SlashCommentFlag:=false;
+  end;
+  if InCommentFlag=false then begin
+    ParenCommentFlag:=false;
+    BracketCommentFlag:=false;
+  end;
+  if LineCounter=1 then begin
 //UTFの場合、文字列にUTF識別子がついているのでそれを削除・・・だと思う
-    while  CurSt[1]>#$80 DO Delete(CurSt,1,1);
+    while  CurSt[1]>#$80 do Delete(CurSt,1,1);
     CurStLength:=Length(CurSt);
-  END;
+  end;
   Inc(LineCounter);
 end;
 
 function TokenReaderRecord.isEnd:boolean;//cPOSが行末だったらtrueを返す
-BEGIN
-  IF CurStLength<cPOS THEN result:=true ELSE result:=FALSE;
-END;
+begin
+  if CurStLength<cPOS then result:=true else result:=false;
+end;
 
 function TokenReaderRecord.isStringData:boolean;
 var
   ch,NextCh:char;
-BEGIN
+begin
   result:=inCommentFlag;
   ch:=CurSt[cPos];SideEffectCh:=#0;
-  IF CurStLength>=cPos+1 THEN NextCh:=CurSt[cPos+1] ELSE NextCh:=#0;
-  IF inCommentFlag THEN BEGIN (**コメント終わりかどうか？if**)
-    IF ParenCommentFlag THEN BEGIN
-      IF (ch='*') and(NextCh=')' ) THEN BEGIN
-          ParenCommentFlag:=FALSE;
-          result:=FALSE;
+  if CurStLength>=cPos+1 then NextCh:=CurSt[cPos+1] else NextCh:=#0;
+  if inCommentFlag then begin (**コメント終わりかどうか？if**)
+    if ParenCommentFlag then begin
+      if (ch='*') and(NextCh=')' ) then begin
+          ParenCommentFlag:=false;
+          result:=false;
           SideEffectCh:='*';inc(cPos);
-      END;
-    END;
-    IF BracketCommentFlag THEN BEGIN
-      IF ch='}' THEN BEGIN
-        result:=FALSE;
-        BracketCommentFlag:=FALSE;
-      END;
-    END;
-    IF LiteralFlag THEN BEGIN
+      end;
+    end;
+    if BracketCommentFlag then begin
+      if ch='}' then begin
+        result:=false;
+        BracketCommentFlag:=false;
+      end;
+    end;
+    if LiteralFlag then begin
       if ch=#$27 then begin
         result:=false;
         LiteralFlag:=false;
       end;
     end;
-  END
-  ELSE BEGIN(**コメントかどうか？**)
-    IF (ch='(') and (NextCh='*') THEN BEGIN
+  end
+  else begin(**コメントかどうか？**)
+    if (ch='(') and (NextCh='*') then begin
       result:=TRUE;ParenCommentFlag:=TRUE;
-    END;
-    IF ch='{' THEN BEGIN
+    end;
+    if ch='{' then begin
       result:=TRUE;BracketCommentFlag:=TRUE;
-    END;
-    IF ch=#$27 then begin
+    end;
+    if ch=#$27 then begin
       result:=true;LiteralFlag:=TRUE;
     end;
-    IF (ch='/') and (NextCh='/') THEN BEGIN
+    if (ch='/') and (NextCh='/') then begin
       result:=TRUE;SlashCommentFlag:=TRUE;
-    END;
-  END;
-END;
+    end;
+  end;
+end;
 
 function TokenReaderRecord.ReplaceKeyword(st:string):string;
 var
   i:integer;
-BEGIN
+begin
   for i:=0 to CmdStrList.count-1 do begin
-    IF UpperCase(st)=CmdStrList[i] THEN BEGIN
-      IF LowerFlag then
+    if UpperCase(st)=CmdStrList[i] then begin
+      if LowerFlag then
 	result:=LowerCase(CmdStrList[i])
       else
 	result:=CmdStrList[i] ;
@@ -119,35 +119,35 @@ BEGIN
     end;
   end;
   result:=st;
-END;
+end;
 
 
-FUNCTION TokenReaderRecord.FetchStr:String;
+function TokenReaderRecord.FetchStr:String;
 var
   ch:char;
   kStr,wStr:String;
-BEGIN
+begin
   wStr:='';
-  IF CurStLength<=0 THEN BEGIN
+  if CurStLength<=0 then begin
     FetchStr:='';
     exit;
-  END;
-  while isEnd=FALSE DO BEGIN
-    WHILE NOT(CurSt[cPos] IN ['A'..'Z','_','a'..'z']) AND (isEnd=FALSE) DO BEGIN
+  end;
+  while isEnd=false do begin
+    while not(CurSt[cPos] in ['A'..'Z','_','a'..'z']) and (isEnd=false) do begin
       inCommentFlag:=isStringData;//*)の扱いが問題あるが・・・
-      IF SideEffectCh<>#0 THEN wStr:=wStr+SideEffectCh;
+      if SideEffectCh<>#0 then wStr:=wStr+SideEffectCh;
       wStr:=wStr+CurSt[cPos];inc(cPos);
-    END;
+    end;
 
     kStr:='';
-    WHILE (CurSt[cPos] IN ['A'..'Z','_','a'..'z']) AND (isEnd=FALSE) DO BEGIN
+    while (CurSt[cPos] in ['A'..'Z','_','a'..'z']) and (isEnd=false) do begin
       kStr:=kStr+CurSt[cPos];inc(cPos);
-    END;
-    IF inCommentFlag=FALSE THEN kStr:=ReplaceKeyword(kStr);
+    end;
+    if inCommentFlag=false then kStr:=ReplaceKeyword(kStr);
     wStr:=wStr+kStr;
-  END;
+  end;
   FetchStr:=wStr;
-END;
+end;
 
 var
   Line:String;
@@ -157,49 +157,56 @@ var
   OFN,tempFN:String;
   TokenReader:TokenReaderRecord;
   Info:TSearchRec;
-  isUTF8,isOutFile:Boolean;
+  isUTF8,isDispCode:boolean;
   oLineList:TStringList;
   i:integer;
-BEGIN
+begin
   replaceFlag:=false;
   tempFN:='temp.tmp';
   InitCmdStr;
-  isUTF8:=TRUE;isOutFile:=FALSE;
+  isUTF8:=TRUE;isDispCode:=false;
   c:=#0;
-  REPEAT
+  repeat
     c:=getopt('e:or');
-    CASE c OF
+    case c of
       'r':begin
 	    ReplaceFlag:=TRUE;
 	  end;
-      'o': BEGIN
-        isOutFile:=TRUE;
-      END;
-      'e':BEGIN
-        IF UpperCase(OptArg)='S' THEN BEGIN
-          isUTF8:=FALSE;
-        END;
-      END;
-    END; { case }
-  UNTIL c=endofoptions;
+      'o': begin
+        isDispCode:=TRUE;
+      end;
+      'e':begin
+        if UpperCase(OptArg)='S' then begin
+          isUTF8:=false;
+        end;
+      end;
+      '?':begin
+        writeln('ussage');
+        writeln('nkl [option] FileName');
+        writeln('-r replace file (else output TEMP.TMP');
+        writeln('-o disp souce screen');
+        writeln('-e s change shift-jis mode.not implement');
+      end;
+    end; { case }
+  until c=endofoptions;
 
   if optind<=paramcount then begin
     writeln(' Arg=',ParamStr(OptInd) );
     FindFirst(ParamStr(OptInd),faAnyFile,Info);
     repeat
-      IF (Info.Attr and faDirectory)<>faDirectory THEN BEGIN
+      if (Info.Attr and faDirectory)<>faDirectory then begin
         writeln(' Assign Name=',Info.name);
         assign(fp,Info.Name); reset(fp);
         if ReplaceFlag then oFN:=Info.name else oFN:=tempFN;
         oLineList:=TStringList.Create;
         TokenReader.ClearCommentFlag;
         TokenReader.isUTF8:=isUTF8;
-        while EOF(fp)=FALSE DO BEGIN
-          ReadLN(fp,LINE);   
+        while EOF(fp)=false do begin
+          readln(fp,LINE);   
           oLine:=LINE;
           TokenReader.SetSt(oLine);
           oLine:=TokenReader.FetchStr;
-          writeln(oLINE);
+          if isDispCode then writeln(oLINE);
           oLineList.add(oLINE);
         end;(*while*);
         close(fp);
@@ -209,11 +216,11 @@ BEGIN
           writeln(oFp,oLineList[i]);
         end;
         close(oFp);
-      END;
+      end;
     until FindNext(Info)<>0;
     FindClose(Info);
   end;
-END.
+end.
 
 {
 $20,$9:space;

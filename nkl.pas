@@ -13,6 +13,7 @@ type
     cPos:integer;
     LineCounter:integer;
     isUTF8:boolean;
+	isLowerCase:boolean;
     inCommentFlag,SlashCommentFlag,ParenCommentFlag,BracketCommentFlag:boolean;
     LiteralFlag:boolean;
     procedure ClearCommentFlag;
@@ -111,10 +112,10 @@ var
 begin
   for i:=0 to CmdStrList.count-1 do begin
     if UpperCase(st)=CmdStrList[i] then begin
-      if LowerFlag then
-	result:=LowerCase(CmdStrList[i])
-      else
-	result:=CmdStrList[i] ;
+       if isLowerCase then
+		  result:=LowerCase(CmdStrList[i])
+       else
+	      result:=CmdStrList[i] ;
       exit;
     end;
   end;
@@ -165,10 +166,11 @@ begin
   replaceFlag:=false;
   tempFN:='temp.tmp';
   InitCmdStr;
+  TokenReader.isLowerCase:=FALSE;
   isUTF8:=TRUE;isDispCode:=false;isSelfMatch:=false;
   c:=#0;
   repeat
-    c:=getopt('e:mor');
+    c:=getopt('e:morl?');
     case c of
       'r':begin
 	    ReplaceFlag:=TRUE;
@@ -183,7 +185,10 @@ begin
         if UpperCase(OptArg)='S' then begin
           isUTF8:=false;
         end;
-      end;
+		  end;
+	  'l':begin
+		TokenReader. isLowerCase:=true;
+	  end;
       '?':begin
         writeln('ussage');
         writeln('nkl [option] FileName');
@@ -191,6 +196,7 @@ begin
         writeln('-o disp souce screen');
         writeln('-m .pas //unix shell complete * so ');
         writeln('-e s change shift-jis mode.not implement');
+		writeln('-l ReservedWord make lower');
       end;
     end; { case }
   until c=endofoptions;
